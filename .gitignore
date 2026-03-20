@@ -1,0 +1,46 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Generated output (contains personal resume data — never commit)
+output_files/
+!output_files/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# Build / distribution
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Compiled LaTeX artifacts (output_files covers most; belt-and-suspenders)
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/settings.json
+*.swp
+*.swo

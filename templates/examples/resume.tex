@@ -1,0 +1,127 @@
+%==== PACKAGES AND OTHER DOCUMENT CONFIGURATIONS  ====%
+\documentclass{resume}
+
+% Document settings
+\usepackage[left=0.25in,top=0.25in,right=0.25in,bottom=0.25in]{geometry}
+
+% Font and text packages (remove duplicates)
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{fontawesome}
+
+% Color and hyperlink setup
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% Define custom colors
+\definecolor{myblue}{RGB}{0, 164, 218}
+
+% Hyperlink configuration
+\hypersetup{
+    colorlinks=true,
+    linkcolor=myblue,
+    citecolor=myblue,   
+    urlcolor=myblue
+}
+
+% Document formatting
+\linespread{1.1}
+\renewcommand{\labelitemi}{\textcolor{myblue}{$\bullet$}}
+\setlength{\parskip}{0.5em}
+
+%==== Headings ====%
+\name{Aaron Dankert} % Your name
+\address{
+{\faPhone} \href{tel:(505)507{-}8207}{(505)507{-}8207} \quad {\faEnvelope} \href{mailto:aarondankert@gmail.com}{aarondankert@gmail.com} \quad {\faGithub} \href{https://github.com/aa{-}dank}{https://github.com/aa{-}dank} \quad {\faLinkedin} \href{https://www.linkedin.com/in/aadank/}{https://www.linkedin.com/in/aadank/} }
+
+% Start document content
+\begin{document}
+
+%===== WORK EXPERIENCE SECTION =====%
+    \begin{rSection}{Work Experience}
+                    \begin{rSubsection}
+                {Systems Analyst}{2023 - Present}
+                                    {\normalfont{\textit{University of California, Santa Cruz}}}
+                                {\normalfont{\textit{Santa Cruz, CA, USA}}}
+                                    \item Engineered a document ingestion and classification pipeline using transformer embeddings, ANN search, and K-NN tagging; integrated predictions with SQLAlchemy ORM models to preserve metadata lineage and traceability.
+                                    \item Designed and maintained modular ETL pipelines in Python supporting ingestion, transformation, and validation of operational datasets; improved reliability and auditability of downstream reporting workflows.
+                                    \item Administered and optimized relational databases (PostgreSQL, SQL Server, FileMaker), including schema design, indexing, access controls, and query performance tuning.
+                                    \item Led end-to-end CMiC-to-FileMaker migration, engineering automated extraction, reconciliation, and validation processes to ensure data integrity and continuity of critical reporting systems.
+                                    \item Embedded automated data quality checks and structured documentation (data flows, schemas, process maps) to strengthen governance and audit readiness.
+                            \end{rSubsection}
+                    \begin{rSubsection}
+                {Archives Manager}{2020 - 2023}
+                                    {\normalfont{\textit{University of California, Santa Cruz}}}
+                                {\normalfont{\textit{Santa Cruz, CA, USA}}}
+                                    \item Architected and deployed a Flask and PostgreSQL-based archives management system with structured metadata and user activity tracking.
+                                    \item Lead a team of 6 Employees; managed and trained staff on data management best practices and software tools.
+                                    \item Designed RESTful APIs and automated ingestion routines reducing manual processing time while formalizing internal data governance standards.
+                                    \item Developed operational dashboards and KPI reports (Matplotlib, Seaborn) to monitor backlog, productivity, and compliance metrics.
+                            \end{rSubsection}
+                    \begin{rSubsection}
+                {Data Coordinator}{2017 - 2020}
+                                    {\normalfont{\textit{University of California, Santa Cruz}}}
+                                {\normalfont{\textit{Santa Cruz, CA, USA}}}
+                                    \item Managed lifecycle tracking data for \$920M+ in capital construction projects building structured SQL-based reporting systems for RFIs, submittals, and compliance documentation.
+                                    \item Coordinated interdepartmental initiatives by managing timelines, stakeholder communications, resource allocation, and process documentation to ensure consistent execution across multiple concurrent projects.
+                                    \item Maintained sensitive financial and project data under university and state regulatory standards, ensuring adherence to internal controls and audit requirements.
+                            \end{rSubsection}
+                    \begin{rSubsection}
+                {Health Data Collection Specialist}{2016 - 2017}
+                                    {\normalfont{\textit{University of Chicago NORC}}}
+                                {\normalfont{\textit{Albuququerque, NM}}}
+                                    \item Collected and validated vaccine and public health survey data under HIPAA guidelines, ensuring accurate capture of protected health information (PHI) for federally sponsored research initiatives.
+                            \end{rSubsection}
+                    \begin{rSubsection}
+                {Health Insurance Outreach Associate}{2013 - 2015}
+                                    {\normalfont{\textit{New Mexico Health Connections}}}
+                                {\normalfont{\textit{Albuququerque, NM}}}
+                                    \item Conducted health insurance outreach and lead qualification activities while handling sensitive member information in compliance with HIPAA privacy and data security requirements.
+                            \end{rSubsection}
+            \end{rSection}
+
+%==== EDUCATION SECTION ====%
+\begin{rSection}{Education}
+                        \textbf{University of Michigan, Ann Arbor, USA} \hfill { - } \\
+                            {Masters in Data Science}
+                         
+             
+         
+                        \textbf{University of New Mexico, Albuquerque, USA} \hfill {2005 - 2010} \\
+                            {Bachelors in Psychology and Economics}
+    \end{rSection}
+
+% ==== PROJECTS SECTION =====%
+    \begin{rSection}{Select Projects}
+                    \begin{rSubsection}
+                                    {LLM Research Benchmarking Platform}
+                                {\normalfont{2024 - 2025}}{}{}
+                                    \item Architected an end-to-end ETL pipeline in Python to extract, transform, and load 10,000+ research documents into PostgreSQL with pgvector, implementing structured schema design and metadata validation controls.
+                                    \item Designed reproducible data workflows with batch processing, logging, and automated data quality checks to ensure consistency across heterogeneous data sources.
+                                    \item Implemented governance-oriented features including audit trails, schema standardization, and validation routines to support transparent analytics and reproducibility.
+                            \end{rSubsection}
+                    \begin{rSubsection}
+                                    {UCSC Construction Archives Inference System}
+                                {\normalfont{2025 - Present}}{}{}
+                                    \item Engineered a modular ingestion and transformation pipeline for multi-format documents (PDF, email, HTML, image) with normalized UTF-8 output and structured metadata storage in PostgreSQL.
+                                    \item Implemented automated validation, deduplication, and reconciliation checks to improve data quality and ensure reliable downstream analytics.
+                                    \item Designed vector-based indexing and retrieval workflows using transformer embeddings and ANN search, integrating results with relational tables to preserve lineage and traceability.
+                            \end{rSubsection}
+            \end{rSection}
+
+%==== TECHNICAL STRENGTHS SECTION ====%
+    \begin{rSection}{Technical Skills}
+        \begin{tabular}{ @{} l @{\hspace{1ex}} l }
+                                \textbf{Data Engineering \& ETL:} Python, SQL, Modular ETL/ELT Design, Data Transformation, Data Validation, Slowly Changing Dimensions (SCD), Snapshotting, Metadata Management\\
+                                \textbf{Databases \& Warehousing:} PostgreSQL, SQL Server, FileMaker, Relational Modeling, Schema Design, Index Optimization, Query Tuning, pgvector\\
+                                \textbf{Data Governance \& Quality:} Data Quality Controls, Audit Trails, Data Lineage, Technical Documentation, Access Controls, HIPAA-Aware Data Handling, Regulatory Compliance Support\\
+                                \textbf{Automation \& Dev Practices:} Git/GitHub, CI/CD Concepts, Batch Processing, Structured Logging, Automated Testing (academic), REST API Integration\\
+                                \textbf{Analytics \& Reporting:} Pandas, NumPy, Scikit-Learn, Statistical Analysis, KPI Dashboards, Matplotlib, Seaborn\\
+                                \textbf{Cloud \& Infrastructure (Working Knowledge):} AWS (EC2, S3), Linux (Ubuntu/CentOS), Background Job Processing\\
+                        \textbf{Certifications:} 
+                                            \href{}{\textbf{Statistics with R}}\\
+                                 
+        \end{tabular}
+    \end{rSection}
+\end{document}
