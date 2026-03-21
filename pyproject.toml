@@ -1,0 +1,22 @@
+[project]
+name = "resumint"
+version = "0.1.0"
+description = "CLI tool that generates tailored, ATS-compatible resume PDFs from a job description and portfolio documents using an LLM agent."
+authors = [
+    { name = "crayon-chaos", email = "aarondankert@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "openai-agents",
+    "pydantic-settings",
+    "markitdown",
+    "fpdf2",
+    "typer",
+]
+
+[project.scripts]
+resumint = "resumint.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

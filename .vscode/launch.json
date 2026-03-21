@@ -1,0 +1,97 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // Full run: job + single portfolio doc
+            "name": "resumint: run",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "resumint.main",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--job", "${input:jobFile}",
+                "--portfolio", "${input:portfolioFile}"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            // Verbose run — shows agent reasoning text in addition to tool calls
+            "name": "resumint: run (verbose)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "resumint.main",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--job", "${input:jobFile}",
+                "--portfolio", "${input:portfolioFile}",
+                "--verbose",
+                "--log-level", "DEBUG"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            // Interactive run — pauses after compile for human review
+            "name": "resumint: run (interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "resumint.main",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--job", "${input:jobFile}",
+                "--portfolio", "${input:portfolioFile}",
+                "--interactive"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            // Resume an interrupted run from an existing output folder
+            "name": "resumint: resume-from",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "resumint.main",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "args": [
+                "--job", "${input:jobFile}",
+                "--portfolio", "${input:portfolioFile}",
+                "--resume-from", "${input:resumeFromDir}"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ],
+    "inputs": [
+        {
+            "id": "jobFile",
+            "type": "promptString",
+            "description": "Path to the job description file (PDF, MD, or TXT)",
+            "default": "job.pdf"
+        },
+        {
+            "id": "portfolioFile",
+            "type": "promptString",
+            "description": "Path to the portfolio document (PDF, MD, or TXT)",
+            "default": "portfolio.pdf"
+        },
+        {
+            "id": "resumeFromDir",
+            "type": "promptString",
+            "description": "Path to an existing output folder to resume (e.g. output_files/Acme/Engineer_20260319/)",
+            "default": "output_files/"
+        }
+    ]
+}
