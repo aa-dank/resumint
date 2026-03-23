@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     openai_api_key: str = ""
     default_model: str = "gpt-4o"
+    extraction_model: str = "gpt-4o-mini"  # model used for pre-flight metadata extraction
     output_dir: str = "output_files"
     max_content_loop_iterations: int = 3
     max_compile_loop_iterations: int = 5

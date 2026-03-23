@@ -232,6 +232,7 @@ settings = Settings()
 
 ```
 output_files/{Company}/{JobTitle15}_{ts}/
+├── job_metadata.json         ← extracted company, title, and future metadata fields
 ├── build_state.json          ← agent phase checkpoint (resumability)
 ├── resume_content.json       ← validated content from Loop A
 ├── validation_report.txt     ← Loop A gaps/warnings (if any)

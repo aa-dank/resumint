@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import sys
 from datetime import datetime
@@ -14,6 +15,7 @@ from markitdown import MarkItDown
 
 from resumint.agent import build_agent, run_agent
 from resumint.config import settings
+from resumint.extractors import extract_job_metadata
 from resumint.latex_toolbox import cleanup_latex_files
 from resumint.parsers import load_doc_text
 from resumint.prompts.prompts import InitialMessage
@@ -87,9 +89,15 @@ def main(
         out_dir = str(resume_from)
         resuming = True
     else:
-        # Extract company / title heuristically from the first lines of job text
-        # The agent will use the full text; this is just for folder naming.
-        company, title = _extract_company_and_title(job_text)
+        # Extract company / title via structured LLM call for accurate folder naming.
+        extraction_model = settings.extraction_model or settings.default_model
+        metadata = extract_job_metadata(
+            job_text=job_text,
+            model=extraction_model,
+            api_key=settings.openai_api_key,
+        )
+        company = metadata.company_name or "Unknown"
+        title = metadata.job_title or "Resume"
         out_dir = build_application_destination(
             company_name=company,
             job_title=title,
@@ -100,6 +108,12 @@ def main(
     # --- Reconfigure logger with file handler ---
     log_path = os.path.join(out_dir, "run.log")
     setup_run_logger(log_path=log_path, level=log_level)
+
+    # --- Write extracted metadata to disk ---
+    if not resuming:
+        metadata_path = os.path.join(out_dir, "job_metadata.json")
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            json.dump(metadata.model_dump(), f, indent=2, ensure_ascii=False)
 
     typer.echo(f"Output: {out_dir}")
 
@@ -150,31 +164,3 @@ def main(
     typer.echo(f"\n{build_final_summary(out_dir)}")
 
 
-def _extract_company_and_title(job_text: str) -> tuple[str, str]:
-    """
-    Best-effort extraction of company name and job title from raw job text.
-
-    Falls back to generic names if parsing fails. The agent doesn't rely on this —
-    it's only used for output folder naming.
-    """
-    lines = [ln.strip() for ln in job_text.strip().splitlines() if ln.strip()]
-
-    # Heuristic: first non-empty line is the job title, second might be company
-    title = lines[0] if lines else "Resume"
-    company = "Unknown"
-
-    # Look for common patterns like "Company | Location" or "Company — Location"
-    if len(lines) >= 2:
-        second = lines[1]
-        for sep in ["|", "—", "–", "-", ","]:
-            if sep in second:
-                company = second.split(sep)[0].strip()
-                break
-        else:
-            company = second
-
-    # Sanitize to reasonable lengths
-    title = title[:60]
-    company = company[:40]
-
-    return company, title
