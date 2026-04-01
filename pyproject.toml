@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 dependencies = [
     "openai-agents",
     "pydantic-settings",
-    "markitdown",
+    "markitdown[pdf]",
     "fpdf2",
     "typer",
 ]

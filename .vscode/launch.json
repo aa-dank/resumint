@@ -43,10 +43,27 @@
             "type": "debugpy",
             "request": "launch",
             "module": "resumint.main",
-            "python": "${workspaceFolder}/.venv/bin/python",
             "args": [
                 "--job", "${input:jobFile}",
                 "--portfolio", "${input:portfolioFile}",
+                "--interactive"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            // Smoke test with known-good local files (no prompt entry required)
+            "name": "resumint: run (interactive, known files)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/resumint/main.py",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--job", "${workspaceFolder}/input_files/Granite AI lead.pdf",
+                "--portfolio", "${workspaceFolder}/input_files/full_resume_contents_20250913.pdf",
                 "--interactive"
             ],
             "env": {
@@ -72,20 +89,44 @@
             },
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+  "name": "resumint: HELP TEST",
+  "type": "debugpy",
+  "request": "launch",
+
+  // use program instead of module to avoid import weirdness
+  "program": "${workspaceFolder}/src/resumint/main.py",
+
+  // minimal args — removes ALL file/path complexity
+  "args": ["--help"],
+
+  // force output somewhere visible
+  "console": "integratedTerminal",
+
+  // avoid interpreter conflicts
+  // (make sure VSCode interpreter is set correctly instead)
+  // no "python" field
+
+  "env": {
+    "PYTHONPATH": "${workspaceFolder}/src"
+  },
+
+  "justMyCode": false
+}
     ],
     "inputs": [
         {
             "id": "jobFile",
             "type": "promptString",
-            "description": "Path to the job description file (PDF, MD, or TXT)",
-            "default": "job.pdf"
+            "description": "Path to the job description file (PDF/MD/TXT). Use workspace-relative or absolute path; no quotes.",
+            "default": "input_files/Granite AI lead.pdf"
         },
         {
             "id": "portfolioFile",
             "type": "promptString",
-            "description": "Path to the portfolio document (PDF, MD, or TXT)",
-            "default": "portfolio.pdf"
+            "description": "Path to the portfolio document (PDF/MD/TXT). Use workspace-relative or absolute path; no quotes.",
+            "default": "input_files/full_resume_contents_20250913.pdf"
         },
         {
             "id": "resumeFromDir",
@@ -93,5 +134,6 @@
             "description": "Path to an existing output folder to resume (e.g. output_files/Acme/Engineer_20260319/)",
             "default": "output_files/"
         }
+        
     ]
 }

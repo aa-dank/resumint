@@ -7,6 +7,7 @@
 1. [`specs/PROJECT_SPEC.md`](specs/PROJECT_SPEC.md) — What the project is, architecture, CLI, output structure, implementation order
 2. [`specs/AGENT_DESIGN.md`](specs/AGENT_DESIGN.md) — How the OpenAI Agents SDK is used, every tool's full spec, the tool factory pattern
 3. [`specs/PROMPTS_DESIGN.md`](specs/PROMPTS_DESIGN.md) — The full system prompt (a `Prompt` instance), initial message structure, LaTeX example reference conventions
+4. [`specs/JOB_METADATA_EXTRACTION.md`](specs/JOB_METADATA_EXTRACTION.md) — Pre-flight structured LLM extraction of company name and job title; `JobMetadata` model; SQLite bridge notes
 
 **Then read `reference/`** for working implementations you can adapt directly:
 
@@ -27,7 +28,8 @@ dev/
 ├── specs/
 │   ├── PROJECT_SPEC.md
 │   ├── AGENT_DESIGN.md
-│   └── PROMPTS_DESIGN.md
+│   ├── PROMPTS_DESIGN.md
+│   └── JOB_METADATA_EXTRACTION.md
 └── reference/         ← prior art from job_hunter_toolbox (read-only, do not edit)
     ├── less_basic_template.tex
     ├── less_basic_template.cls

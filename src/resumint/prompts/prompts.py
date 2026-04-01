@@ -101,17 +101,25 @@ Using the example .tex and .cls files at the end of this message as reference:
      candidate's own materials — let their portfolio tell you who they are presenting as
 
 2. Generate the document class: call `write_cls_file` with the full .cls content
-   - Draw on the example .cls files as reference; adapt freely
+   - Use the reference .cls as your FOUNDATION — copy it and adapt only colors, spacing,
+     and font sizes. Do NOT write a custom .cls from scratch.
+   - The `rSection`, `rSubsection`, and `rSubWork` environments in the reference .cls are
+     proven, ATS-tested, and compile reliably. Your .tex MUST use them.
    - \documentclass{} in your .tex MUST be \documentclass{resume}
 
 3. Generate the LaTeX source: call `write_tex_file` with the full .tex content
+   - Use the reference .tex as your structural template: 0.25in margins, `\name`,
+     `\address` with FontAwesome icons (\faPhone, \faEnvelope, \faGithub, \faLinkedin),
+     `hyperref` with colorlinks. Use `\begin{rSection}` and `\begin{rSubsection}`
+     throughout — do NOT invent custom sectioning commands.
    - Pull all content from the resume_content.json you saved in Phase 1
    - Escape all user-supplied text: & → \& | % → \% | $ → \$ | # → \# | _ → \_ etc.
    - Section order should reflect your design decision in step 1
 
-The examples are reference, not constraints. Combine patterns, adapt layouts, or depart
-from them as the candidate's materials suggest. The goal is a document that reads as a
-coherent, deliberately designed whole.
+You may change accent colors, tweak spacing, and adjust which content appears —
+but the structural backbone (environments, header pattern, margins) must follow the
+reference. Departing from the reference .cls structure is the leading cause of
+compile failures and poor output.
 
 ### ATS Compatibility Rules
 Avoid these patterns (they break ATS parsing):
@@ -371,12 +379,12 @@ class InitialMessage(Prompt):
             f"{_SEPARATOR}\n"
             f"LATEX REFERENCE EXAMPLES\n"
             f"{_SEPARATOR}\n\n"
-            "Working .tex and .cls from a prior run. Draw on them freely when designing\n"
-            "this resume. Adapt patterns, combine ideas, or depart entirely — these are\n"
-            "reference, not constraints.\n\n"
-            "Note: the skills section in resume.tex uses \\begin{tabular} — avoid this\n"
-            "pattern in generated output (ATS risk; use \\begin{itemize} or plain\n"
-            "key: value lines instead)."
+            "The .cls and .tex below are your structural foundation — follow them closely.\n"
+            "The rSection/rSubsection environments in the .cls are the required building blocks;\n"
+            "your generated .tex MUST use them. You may adapt colors and spacing in the .cls,\n"
+            "but do not rewrite its core environment definitions from scratch.\n\n"
+            "One exception: the skills \\begin{tabular} in the .tex is an ATS risk —\n"
+            "replace it with \\begin{itemize} or plain 'Category: item, item' lines instead."
         ]
         for fname, content in self.examples:
             example_parts.append(f"### {fname}\n```latex\n{content}\n```")

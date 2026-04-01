@@ -7,6 +7,9 @@
 output_files/
 !output_files/.gitkeep
 
+# resume and job listing source materials
+input_files/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -164,3 +164,7 @@ def main(
     typer.echo(f"\n{build_final_summary(out_dir)}")
 
 
+if __name__ == "__main__":
+    app()
+
+
