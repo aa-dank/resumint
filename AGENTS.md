@@ -49,9 +49,10 @@ All agent tools are defined as closures inside `build_tools(output_dir)` in `age
 
 ### Key Module Responsibilities
 
-- `main.py` — Typer CLI entry point. Parses documents via `markitdown`, assembles the `InitialMessage`, builds and runs the agent, handles interactive review gate.
+- `main.py` — Typer CLI entry point. Parses documents via `markitdown`, calls `extract_job_metadata()` for folder naming, assembles the `InitialMessage`, builds and runs the agent, handles interactive review gate.
 - `agent.py` — Agent construction (`build_agent`), tool factory (`build_tools`), streaming runner (`run_agent`), and `PHASE_SIGNALS` display mapping.
-- `config.py` — `pydantic-settings` `Settings` class reading from `.env`. Singleton `settings` object used throughout.
+- `config.py` — `pydantic-settings` `Settings` class reading from `.env`. Key fields: `openai_api_key`, `default_model`, `extraction_model` (lightweight direct-API model for metadata), `max_content_loop_iterations`, `max_compile_loop_iterations`. Singleton `settings` object used throughout.
+- `extractors.py` — Pre-flight structured metadata extraction via **direct OpenAI API** (not Agents SDK). `extract_job_metadata()` returns a `JobMetadata` pydantic model (`company_name`, `job_title`) used to name the output folder. Truncates input to 6K chars; fails gracefully to empty strings.
 - `prompts/prompts.py` — `Prompt` base class with `render()`, the static `SYSTEM_PROMPT_TEXT` (defines both phases, the resume JSON schema, and all agent behavioral rules), and `InitialMessage` which assembles per-run context (job text, portfolio, run config, LaTeX examples).
 - `latex_toolbox.py` — `compile_resume_latex_to_pdf()` (runs compiler twice, parses `l.<N>` error lines), `escape_for_latex()`, `cleanup_latex_files()`.
 - `parsers.py` — `load_doc_text()` handles JSON/MD/TXT directly and routes PDF/DOCX through `MarkItDown`.
@@ -60,6 +61,7 @@ All agent tools are defined as closures inside `build_tools(output_dir)` in `age
 ### Output Folder Structure
 
 Each run produces artifacts in `output_files/{Company}/{JobTitle15}_{timestamp}/`:
+- `job_metadata.json` — extracted company/title from pre-flight step
 - `resume_content.json` — validated content from Phase 1
 - `resume.cls` + `resume.tex` + `resume.pdf` — LaTeX artifacts from Phase 2
 - `build_state.json` — phase checkpoint enabling `--resume-from`
@@ -74,7 +76,7 @@ Detailed design documents live in `dev/specs/` (PROJECT_SPEC.md, AGENT_DESIGN.md
 ## Key Design Decisions
 
 - **No Jinja2 template filling.** The agent generates `.tex`/`.cls` from scratch for full design freedom. The compile loop must handle agent-generated LaTeX errors.
-- **No structured extraction pass.** The agent reasons over raw document text directly — no intermediate JSON extraction step.
+- **No structured extraction pass in the agent loop.** The agent reasons over raw document text directly. A lightweight pre-flight step (`extractors.py`) extracts company name and job title via direct API call solely for output folder naming — this does not feed into the agent's reasoning.
 - **Prompt-driven behavior.** The system prompt in `prompts/prompts.py` defines both phases, all rules, the JSON schema, and common LaTeX error fixes. Changes to agent behavior primarily happen there.
 - **Resumability via `build_state.json`.** The agent writes phase checkpoints; `--resume-from` skips completed phases.
 - **ATS compatibility.** The system prompt forbids `tabular` for body content, `multicol` for sections, `tcolorbox`, `fontspec`, and `colorbox` on text. No hidden keyword injection.

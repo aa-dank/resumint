@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -141,6 +142,11 @@ def main(
 
     # --- Cleanup LaTeX auxiliary files ---
     cleanup_latex_files(out_dir)
+
+    # --- Move job description file into output directory ---
+    job_dest = Path(out_dir) / job.name
+    if job.resolve() != job_dest.resolve():
+        shutil.move(str(job), str(job_dest))
 
     # --- Interactive review gate ---
     if interactive and os.path.exists(os.path.join(out_dir, "resume.pdf")):

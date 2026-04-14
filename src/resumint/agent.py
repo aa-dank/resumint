@@ -8,7 +8,7 @@ import logging
 import os
 import time
 
-from agents import Agent, Runner, function_tool
+from agents import Agent, MaxTurnsExceeded, Runner, function_tool
 
 from resumint.config import settings
 from resumint.latex_toolbox import compile_resume_latex_to_pdf
@@ -257,27 +257,35 @@ async def run_agent(
     Returns:
         The agent's final output text.
     """
-    result = Runner.run_streamed(agent, input=initial_message)
-    async for event in result.stream_events():
-        if event.type == "raw_response_event":
-            # Skip raw SSE chunks
-            continue
-        elif event.type == "run_item_stream_event":
-            item = event.item
-            # Tool call start
-            if item.type == "tool_call_item" and hasattr(item, "raw_item"):
-                tool_name = getattr(item.raw_item, "name", None)
-                if tool_name:
-                    label = PHASE_SIGNALS.get(tool_name, f"  → {tool_name}")
-                    print(label)
-            # Tool output
-            elif item.type == "tool_call_output_item":
-                output_str = str(getattr(item, "output", ""))[:120]
-                print(f"    ✓ {output_str}")
-            # Agent message (verbose only)
-            elif verbose and item.type == "message_output_item":
-                text = getattr(item, "text", "")
-                if text:
-                    print(f"  [agent] {text[:200]}")
+    logger.info("Agent run started")
+    result = Runner.run_streamed(agent, input=initial_message, max_turns=50)
+    try:
+        async for event in result.stream_events():
+            if event.type == "raw_response_event":
+                # Skip raw SSE chunks
+                continue
+            elif event.type == "run_item_stream_event":
+                item = event.item
+                # Tool call start
+                if item.type == "tool_call_item" and hasattr(item, "raw_item"):
+                    tool_name = getattr(item.raw_item, "name", None)
+                    if tool_name:
+                        logger.info("Tool call: %s", tool_name)
+                        label = PHASE_SIGNALS.get(tool_name, f"  → {tool_name}")
+                        print(label)
+                # Tool output
+                elif item.type == "tool_call_output_item":
+                    output_str = str(getattr(item, "output", ""))[:120]
+                    logger.debug("Tool output: %s", output_str)
+                    print(f"    ✓ {output_str}")
+                # Agent message (verbose only)
+                elif verbose and item.type == "message_output_item":
+                    text = getattr(item, "text", "")
+                    if text:
+                        print(f"  [agent] {text[:200]}")
+    except MaxTurnsExceeded as exc:
+        logger.error("MaxTurnsExceeded: %s", exc)
+        return "Run stopped: agent exceeded maximum turns. Partial output may exist in the output directory."
 
+    logger.info("Agent run complete")
     return result.final_output
