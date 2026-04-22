@@ -12,7 +12,7 @@ from agents import Agent, MaxTurnsExceeded, Runner, function_tool
 
 from resumint.config import settings
 from resumint.latex_toolbox import compile_resume_latex_to_pdf
-from resumint.prompts.prompts import system_prompt
+from resumint.prompts.prompts import Prompt, system_prompt
 
 logger = logging.getLogger("resumint.agent")
 
@@ -222,14 +222,19 @@ def build_tools(output_dir: str) -> list:
 # ---------------------------------------------------------------------------
 
 
-def build_agent(output_dir: str, model_override: str | None = None) -> Agent:
+def build_agent(
+    output_dir: str,
+    model_override: str | None = None,
+    instructions_prompt: Prompt | None = None,
+) -> Agent:
     """Build the ResumeBuilder agent with tools pre-bound to this run's output directory."""
     tools = build_tools(output_dir)
     model = model_override or settings.default_model
+    instructions = (instructions_prompt or system_prompt).render()
     return Agent(
         name="ResumeBuilder",
         model=model,
-        instructions=system_prompt.render(),
+        instructions=instructions,
         tools=tools,
         # TODO: max_turns is not yet a supported param in all SDK versions;
         # leave it out and rely on natural termination + system prompt discipline.

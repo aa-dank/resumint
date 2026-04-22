@@ -1,4 +1,4 @@
-"""Prompt class, system prompt text, and InitialMessage assembly."""
+"""Prompt class, system prompt text, and message assembly helpers."""
 
 from __future__ import annotations
 
@@ -296,6 +296,79 @@ Final message to the user should include:
 system_prompt = Prompt(template=SYSTEM_PROMPT_TEXT)
 
 
+REVIEW_SYSTEM_PROMPT_TEXT = r"""You are continuing an existing resumint build in INTERACTIVE REVIEW MODE.
+
+The initial resume build has already created LaTeX files in the output directory. Your job now is to
+incorporate the user's requested changes into the EXISTING files, preserve the good parts, and run the
+LaTeX compile-and-fix loop again until the PDF compiles cleanly.
+
+CRITICAL EXECUTION RULES:
+- Treat the current `resume.tex` and `resume.cls` on disk as the source of truth.
+- Do NOT restart the resume from scratch.
+- Do NOT redo the original full two-phase workflow unless the user explicitly asks for a deeper content rewrite.
+- Work entirely through tool calls. Keep text responses brief operational notes only.
+- Preserve prior working structure, ATS-safe patterns, and any manual user edits already present in the files.
+- For content-changing requests, the source of truth is the grounded resume data plus the current files:
+  reread the job description, portfolio documents, and `resume_content.json` before making edits.
+
+RECOMMENDED STARTING SEQUENCE:
+1. Call `read_tex_file` to inspect the live `resume.tex`.
+2. Call `read_output_file("resume.cls")` to inspect the live class file.
+3. If the request changes content, ordering, section membership, project count, bullet count, or wording:
+   call `read_output_file("resume_content.json")` before writing anything.
+4. Review the user's latest request and the recent revision history provided in the input.
+
+REVISION RULES:
+- Make the smallest effective change that satisfies the user's request.
+- Prefer targeted edits over broad rewrites.
+- For content-changing requests, update `resume_content.json` with `save_resume_content` before
+  updating the LaTeX so the stored content stays aligned with the document.
+- If the user only asks for formatting or layout changes, leave `resume_content.json` alone.
+- Never discard intentional user changes just because they differ from your earlier design choices.
+- Never invent a new project, bullet, metric, technology, title, or claim that is not supported by the
+  portfolio documents or the existing grounded `resume_content.json`.
+- If the user asks for a content change that is not fully supported by the portfolio, do the strongest
+  grounded version you can, preserve truthfulness, and state the limitation in your final note.
+- When a content request says to "tailor to the job," explicitly use the job description to reorder or
+  rephrase grounded content, but do not fabricate coverage.
+- When editing one section, preserve the rest of the resume unless the user asked for broader changes.
+
+CONTENT-REVISION WORKFLOW:
+1. Re-read the job description section in the input.
+2. Re-read the portfolio section in the input.
+3. Read `resume_content.json`.
+4. Decide whether the requested change is fully supported by the portfolio.
+5. Update `resume_content.json` first.
+6. Then update only the affected LaTeX regions in `resume.tex` and/or `resume.cls`.
+7. Compile and fix errors surgically.
+
+COMPILE LOOP:
+1. After applying the requested changes, call `compile_latex` on `resume.tex`.
+2. If compilation succeeds:
+   - call `save_build_state` with `{"phase": "compile_complete", "pdf_path": "<path>"}`
+   - finish with a short note summarizing the revision outcome
+3. If compilation fails:
+   - inspect `errors` and `error_lines`
+   - re-read the relevant file(s)
+   - make targeted fixes only
+   - call `compile_latex` again
+4. Repeat for up to 5 compile attempts total for this revision turn.
+5. If all attempts fail, write `compile_errors.txt` with `write_output_file` and report the unresolved issue.
+
+WHEN THE USER MANUALLY EDITED FILES:
+- Preserve their edits.
+- Restrict your own changes to what is needed to satisfy the request and restore successful compilation.
+
+Final response to the user should include:
+- whether the requested revision was applied
+- whether compilation succeeded
+- the PDF path if available
+- any remaining issue if compilation still fails
+"""
+
+review_system_prompt = Prompt(template=REVIEW_SYSTEM_PROMPT_TEXT)
+
+
 # ---------------------------------------------------------------------------
 # InitialMessage — per-run context assembly
 # ---------------------------------------------------------------------------
@@ -314,6 +387,14 @@ def _load_examples(examples_dir: str) -> list[tuple[str, str]]:
             with open(fpath, "r", encoding="utf-8") as f:
                 examples.append((fname, f.read()))
     return examples
+
+
+def _read_text_file(path: str) -> str:
+    """Read a text file if it exists, otherwise return NOT_FOUND."""
+    if not os.path.exists(path):
+        return "NOT_FOUND"
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 class InitialMessage(Prompt):
@@ -399,5 +480,104 @@ class InitialMessage(Prompt):
         for fname, content in self.examples:
             example_parts.append(f"### {fname}\n```latex\n{content}\n```")
         sections.append("\n\n".join(example_parts))
+
+        return "\n\n\n".join(sections)
+
+
+class InteractiveRevisionMessage(Prompt):
+    """
+    Assemble the per-turn context for the interactive review loop.
+
+    This keeps the original job and portfolio context available while centering the
+    current on-disk LaTeX files and the user's newest revision request.
+    """
+
+    def __init__(
+        self,
+        job_text: str,
+        job_filename: str,
+        portfolio_docs: list[tuple[str, str]],
+        output_dir: str,
+        timestamp: str,
+        user_request: str,
+        revision_history: list[str],
+        content_revision: bool = False,
+    ) -> None:
+        self.job_text = job_text
+        self.job_filename = job_filename
+        self.portfolio_docs = portfolio_docs
+        self.output_dir = output_dir
+        self.timestamp = timestamp
+        self.user_request = user_request
+        self.revision_history = revision_history
+        self.content_revision = content_revision
+
+    def render(self) -> str:
+        sections: list[str] = []
+
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"INTERACTIVE REVIEW MODE\n"
+            f"{_SEPARATOR}\n\n"
+            f"output_dir: {self.output_dir}\n"
+            f"timestamp:  {self.timestamp}\n"
+            f"revision_turn: {len(self.revision_history) + 1}\n\n"
+            f"content_revision: {'true' if self.content_revision else 'false'}\n\n"
+            "The current LaTeX files on disk are the source of truth.\n"
+            "Preserve working structure and make targeted edits only."
+        )
+
+        if self.content_revision:
+            sections.append(
+                f"{_SEPARATOR}\n"
+                f"CONTENT REVISION REQUIREMENTS\n"
+                f"{_SEPARATOR}\n\n"
+                "This request changes resume content, not just formatting.\n"
+                "Before writing, you must reread the job description, applicant portfolio, and current "
+                "`resume_content.json`. Update grounded resume data first, then update the LaTeX to match.\n"
+                "Do not invent new resume facts to satisfy the request."
+            )
+
+        if self.revision_history:
+            history_lines = [f"{i}. {entry}" for i, entry in enumerate(self.revision_history[-5:], 1)]
+            sections.append(
+                f"{_SEPARATOR}\n"
+                f"RECENT REVISION HISTORY\n"
+                f"{_SEPARATOR}\n\n"
+                + "\n".join(history_lines)
+            )
+
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"LATEST USER REQUEST\n"
+            f"{_SEPARATOR}\n\n"
+            f"{self.user_request}"
+        )
+
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"TARGET JOB DESCRIPTION\n"
+            f"{_SEPARATOR}\n"
+            f"[Source: {self.job_filename}]\n\n"
+            f"{self.job_text}"
+        )
+
+        portfolio_parts = [f"{_SEPARATOR}\nAPPLICANT PORTFOLIO\n{_SEPARATOR}\n"]
+        total = len(self.portfolio_docs)
+        for i, (fname, text) in enumerate(self.portfolio_docs, 1):
+            portfolio_parts.append(f"[Document {i} of {total}: {fname}]\n\n{text}")
+        sections.append("\n---\n\n".join(portfolio_parts) if len(portfolio_parts) > 1 else portfolio_parts[0])
+
+        artifacts = []
+        for name in ["resume_content.json", "validation_report.txt", "compile_errors.txt", "resume.tex", "resume.cls"]:
+            content = _read_text_file(os.path.join(self.output_dir, name))
+            artifacts.append(f"### {name}\n```text\n{content}\n```")
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"CURRENT BUILD ARTIFACTS\n"
+            f"{_SEPARATOR}\n\n"
+            "These snapshots are included for context. Re-read live files with tools before writing.\n\n"
+            + "\n\n".join(artifacts)
+        )
 
         return "\n\n\n".join(sections)

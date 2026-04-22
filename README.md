@@ -48,7 +48,12 @@ Outputs land in `output_files/{Company}/{JobTitle}_{timestamp}/`.
 | `--job` | ✅ | — | Job description file path |
 | `--portfolio` | ✅ | — | Portfolio document path(s) |
 | `--model` | ❌ | from `.env` | LLM model override |
-| `--interactive` | ❌ | False | Pause for human review after compile |
+| `--interactive` | ❌ | False | Enter an iterative review loop after LaTeX generation |
+
+In `--interactive` mode, the CLI keeps the original build context available and lets you:
+- enter a natural-language revision request for the model
+- type `manual` to edit `resume.tex` / `resume.cls` yourself and then ask the model to compile and repair
+- type `done` to run one final compile and finish
 | `--verbose` | ❌ | False | Show agent reasoning text |
 | `--log-level` | ❌ | INFO | Logging verbosity |
 | `--resume-from` | ❌ | — | Resume from an existing output folder |
