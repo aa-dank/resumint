@@ -32,6 +32,14 @@ app = typer.Typer(
 )
 
 
+def _read_text_file_if_present(path: str) -> str | None:
+    """Read a text file if it exists, otherwise return None."""
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def _looks_like_terminal_bootstrap_input(text: str) -> bool:
     """Best-effort filter for terminal bootstrap text accidentally consumed by input()."""
     stripped = text.strip()
@@ -78,6 +86,102 @@ def _is_content_revision_request(text: str) -> bool:
     return any(marker in lowered for marker in content_markers)
 
 
+def _prompt_for_initial_instructions() -> str | None:
+    """Prompt once for optional user instructions before the initial build."""
+    typer.echo("Add any extra instructions for this resume.")
+    typer.echo("Press ENTER on the first line to skip, or type `END` on its own line when finished.")
+
+    lines: list[str] = []
+    prompt_text = "Additional instructions: "
+
+    while True:
+        try:
+            user_input = input(prompt_text)
+        except KeyboardInterrupt:
+            typer.echo("\nSkipping additional instructions.")
+            return None
+
+        if _looks_like_terminal_bootstrap_input(user_input):
+            typer.echo("Ignoring terminal bootstrap input. Waiting for your instructions.")
+            prompt_text = "Additional instructions: " if not lines else "... "
+            continue
+
+        stripped = user_input.strip()
+
+        if not lines and not stripped:
+            return None
+
+        if stripped == "END":
+            joined = "\n".join(lines).strip()
+            return joined or None
+
+        lines.append(user_input.rstrip())
+        prompt_text = "... "
+
+
+def _ensure_expected_outputs(out_dir: str) -> None:
+    """Fail loudly when the agent stops before producing expected phase outputs."""
+    resume_content_path = os.path.join(out_dir, "resume_content.json")
+    resume_tex_path = os.path.join(out_dir, "resume.tex")
+    build_state_path = os.path.join(out_dir, "build_state.json")
+
+    if os.path.exists(resume_content_path) and not os.path.exists(resume_tex_path):
+        typer.echo(
+            "\nError: the agent finished after Phase 1 without generating `resume.tex` for Phase 2.",
+            err=True,
+        )
+        typer.echo(
+            f"Run directory: {out_dir}\n"
+            f"Found: {os.path.basename(resume_content_path)}\n"
+            "Missing: resume.tex, resume.cls, and a compiled PDF\n"
+            "This run is incomplete and was not treated as a success.",
+            err=True,
+        )
+        if os.path.exists(build_state_path):
+            typer.echo(
+                f"Partial state may be present in {build_state_path}. "
+                f"You can inspect the run log at {os.path.join(out_dir, 'run.log')}.",
+                err=True,
+            )
+        raise typer.Exit(1)
+
+
+def _resolve_user_instructions(
+    *,
+    instructions: Optional[str],
+    instructions_file: Optional[Path],
+    interactive: bool,
+    resume_from: Optional[Path],
+) -> str | None:
+    """Resolve the effective user instructions for this run."""
+    inline = instructions.strip() if instructions else ""
+    if inline:
+        return inline
+
+    if instructions_file:
+        return Path(instructions_file).read_text(encoding="utf-8").strip() or None
+
+    if resume_from:
+        saved = _read_text_file_if_present(os.path.join(str(resume_from), "user_instructions.txt"))
+        if saved is not None:
+            return saved.strip() or None
+
+    if interactive:
+        return _prompt_for_initial_instructions()
+
+    return None
+
+
+def _save_user_instructions(output_dir: str, instructions: str | None) -> None:
+    """Persist the user brief for resumed and interactive revision runs."""
+    path = os.path.join(output_dir, "user_instructions.txt")
+    if instructions:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(instructions)
+    elif os.path.exists(path):
+        os.remove(path)
+
+
 def _save_compile_complete_state(output_dir: str, pdf_path: str) -> None:
     """Persist compile-complete state after interactive review compiles."""
     state_path = os.path.join(output_dir, "build_state.json")
@@ -100,6 +204,7 @@ def _run_interactive_review_loop(
     job_filename: str,
     portfolio_docs: list[tuple[str, str]],
     timestamp: str,
+    user_instructions: str | None,
     model: Optional[str],
     verbose: bool,
 ) -> None:
@@ -170,6 +275,7 @@ def _run_interactive_review_loop(
             portfolio_docs=portfolio_docs,
             output_dir=out_dir,
             timestamp=timestamp,
+            user_instructions=user_instructions,
             user_request=revision_request,
             revision_history=revision_history,
             content_revision=content_revision,
@@ -213,6 +319,16 @@ def main(
     model: Optional[str] = typer.Option(
         None,
         help="LLM model override (default from .env).",
+    ),
+    instructions: Optional[str] = typer.Option(
+        None,
+        help="Optional extra guidance for resume generation.",
+    ),
+    instructions_file: Optional[Path] = typer.Option(
+        None,
+        help="Path to a text or markdown file with extra guidance for resume generation.",
+        exists=True,
+        readable=True,
     ),
     interactive: bool = typer.Option(
         False,
@@ -277,6 +393,15 @@ def main(
     log_path = os.path.join(out_dir, "run.log")
     setup_run_logger(log_path=log_path, level=log_level)
 
+    # --- Resolve and persist user instructions ---
+    user_instructions = _resolve_user_instructions(
+        instructions=instructions,
+        instructions_file=instructions_file,
+        interactive=interactive,
+        resume_from=resume_from,
+    )
+    _save_user_instructions(out_dir, user_instructions)
+
     # --- Write extracted metadata to disk ---
     if not resuming:
         metadata_path = os.path.join(out_dir, "job_metadata.json")
@@ -292,6 +417,7 @@ def main(
         portfolio_docs=portfolio_docs,
         output_dir=out_dir,
         timestamp=timestamp,
+        user_instructions=user_instructions,
         resuming=resuming,
     )
 
@@ -306,6 +432,8 @@ def main(
     # Print agent's final message
     if result:
         typer.echo(f"\n{result}")
+
+    _ensure_expected_outputs(out_dir)
 
     # --- Cleanup LaTeX auxiliary files ---
     cleanup_latex_files(out_dir)
@@ -323,6 +451,7 @@ def main(
             job_filename=job.name,
             portfolio_docs=portfolio_docs,
             timestamp=timestamp,
+            user_instructions=user_instructions,
             model=model,
             verbose=verbose,
         )

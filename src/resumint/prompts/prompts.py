@@ -34,6 +34,7 @@ satisfy ATS requirements and immediately communicate value to human reviewers.
 You have been given:
 1. A job description for a specific role
 2. One or more portfolio documents from the applicant
+3. Optional user instructions describing emphasis, tone, omissions, or design preferences
 
 Your task is to produce a compelling, truthful, job-targeted resume as a compiled LaTeX PDF.
 You work in two sequential phases. Do not skip phases or change their order.
@@ -47,6 +48,8 @@ CRITICAL EXECUTION RULES — READ BEFORE ANYTHING ELSE:
   `save_resume_content` with the final JSON. Do not narrate your reasoning at length.
 - If you find yourself writing bullet points or sections in a text response instead of
   calling a tool, STOP and call the appropriate tool instead.
+- Follow user instructions when they are compatible with truthfulness, ATS rules, and
+  the available evidence in the portfolio documents.
 
 
 ═══════════════════════════════════════════════════════════════
@@ -310,6 +313,8 @@ CRITICAL EXECUTION RULES:
 - Preserve prior working structure, ATS-safe patterns, and any manual user edits already present in the files.
 - For content-changing requests, the source of truth is the grounded resume data plus the current files:
   reread the job description, portfolio documents, and `resume_content.json` before making edits.
+- Follow saved user instructions when they are compatible with truthfulness, ATS rules, and
+  the available evidence in the portfolio documents.
 
 RECOMMENDED STARTING SEQUENCE:
 1. Call `read_tex_file` to inspect the live `resume.tex`.
@@ -415,6 +420,7 @@ class InitialMessage(Prompt):
         portfolio_docs: list[tuple[str, str]],  # [(filename, text), ...]
         output_dir: str,
         timestamp: str,
+        user_instructions: str | None = None,
         examples_dir: str | None = None,
         resuming: bool = False,
     ) -> None:
@@ -424,6 +430,7 @@ class InitialMessage(Prompt):
         self.portfolio_docs = portfolio_docs
         self.output_dir = output_dir
         self.timestamp = timestamp
+        self.user_instructions = user_instructions
         self.resuming = resuming
 
         # Resolve examples directory
@@ -454,7 +461,15 @@ class InitialMessage(Prompt):
             )
         sections.append("\n---\n\n".join(portfolio_parts) if len(portfolio_parts) > 1 else portfolio_parts[0])
 
-        # --- Section 3: Run Configuration ---
+        # --- Section 3: User Instructions ---
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"USER INSTRUCTIONS\n"
+            f"{_SEPARATOR}\n\n"
+            f"{self.user_instructions or 'NONE'}"
+        )
+
+        # --- Section 4: Run Configuration ---
         resuming_str = "true — RESUMING EXISTING RUN" if self.resuming else "false"
         sections.append(
             f"{_SEPARATOR}\n"
@@ -465,7 +480,7 @@ class InitialMessage(Prompt):
             f"resuming:    {resuming_str}"
         )
 
-        # --- Section 4: LaTeX Reference Examples ---
+        # --- Section 5: LaTeX Reference Examples ---
         example_parts = [
             f"{_SEPARATOR}\n"
             f"LATEX REFERENCE EXAMPLES\n"
@@ -499,6 +514,7 @@ class InteractiveRevisionMessage(Prompt):
         portfolio_docs: list[tuple[str, str]],
         output_dir: str,
         timestamp: str,
+        user_instructions: str | None,
         user_request: str,
         revision_history: list[str],
         content_revision: bool = False,
@@ -508,6 +524,7 @@ class InteractiveRevisionMessage(Prompt):
         self.portfolio_docs = portfolio_docs
         self.output_dir = output_dir
         self.timestamp = timestamp
+        self.user_instructions = user_instructions
         self.user_request = user_request
         self.revision_history = revision_history
         self.content_revision = content_revision
@@ -546,6 +563,13 @@ class InteractiveRevisionMessage(Prompt):
                 f"{_SEPARATOR}\n\n"
                 + "\n".join(history_lines)
             )
+
+        sections.append(
+            f"{_SEPARATOR}\n"
+            f"SAVED USER INSTRUCTIONS\n"
+            f"{_SEPARATOR}\n\n"
+            f"{self.user_instructions or 'NONE'}"
+        )
 
         sections.append(
             f"{_SEPARATOR}\n"
